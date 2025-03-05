@@ -1,7 +1,7 @@
 import { onBoarding } from "@/constants/welcome";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Swiper from "react-native-swiper";
 
@@ -50,7 +50,11 @@ const Welcome = () => {
       </Swiper>
 
       {/* Continue button positioned at the bottom */}
-      <View className="absolute bottom-14 w-full p-5">
+      <View
+        className={`absolute w-full p-5, ${
+          Platform.OS === "ios" ? "bottom-24" : "bottom-14"
+        }`}
+      >
         <TouchableOpacity
           className="bg-primary shadow-md py-3.5 rounded-full mx-5"
           onPress={() => {
