@@ -26,7 +26,13 @@ const SignIn = () => {
   const imageHeight = screenHeight * 0.3;
 
   const handleSubmit = () => {
-    // Alert.alert("Alert Title", "My Alert Msg");
+    // if (!formData.email || !formData.password) {
+    //   Alert.alert(
+    //     "Missing Information",
+    //     "Please make sure all required fields are filled out before submitting."
+    //   );
+    //   return;
+    // }
     router.replace("/(root)/(tabs)/home");
   };
 
