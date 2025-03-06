@@ -1,7 +1,9 @@
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import Octicons from "@expo/vector-icons/Octicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import Fontisto from "@expo/vector-icons/Fontisto";
 
 const activeColor = "#FA7F35";
 const inactiveColor = "#475569";
@@ -35,6 +37,7 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="home"
         options={{
+          headerShown: false,
           tabBarLabel: ({ focused }) => (
             <TabLabel focused={focused} label="Home" />
           ),
@@ -47,6 +50,7 @@ const TabsLayout = () => {
           ),
         }}
       />
+
       <Tabs.Screen
         name="availability"
         options={{
@@ -62,10 +66,26 @@ const TabsLayout = () => {
           ),
         }}
       />
+
       <Tabs.Screen
+        name="chat"
+        options={{
+          tabBarLabel: ({ focused }) => (
+            <TabLabel focused={focused} label="Chats" />
+          ),
+          tabBarIcon: ({ focused }) => (
+            <Feather
+              name="message-square"
+              size={24}
+              color={focused ? activeColor : inactiveColor}
+            />
+          ),
+        }}
+      />
+
+      {/* <Tabs.Screen
         name="history"
         options={{
-          headerShown: false,
           tabBarLabel: ({ focused }) => (
             <TabLabel focused={focused} label="History" />
           ),
@@ -77,11 +97,10 @@ const TabsLayout = () => {
             />
           ),
         }}
-      />
+      /> */}
       <Tabs.Screen
         name="profile"
         options={{
-          headerShown: false,
           tabBarLabel: ({ focused }) => (
             <TabLabel focused={focused} label="Profile" />
           ),

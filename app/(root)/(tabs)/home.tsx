@@ -1,28 +1,18 @@
-import { View, Text, FlatList, TouchableOpacity } from "react-native";
-
-const DATA: ItemProps[] = [
-  {
-    id: "1",
-    companyName: "WTH Car rental ulc",
-    vin: "AJ283241",
-    type: "PICKUP",
-    address: "24 Jackson Ave, Kitchener, ON N2H 2N8",
-  },
-  {
-    id: "2",
-    companyName: "east gta compound",
-    vin: "KA632881",
-    type: "PICKUP",
-    address: "196 Woodbine Ave, Kitchener, ON, N2R 1Y5",
-  },
-  {
-    id: "3",
-    companyName: "WTH Car rental ulc",
-    vin: "AJ283241",
-    type: "DROP-OFF",
-    address: "24 Jackson Ave, Kitchener, ON N2H 2N8",
-  },
-];
+import { routesData } from "@/constants/data";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import Fontisto from "@expo/vector-icons/Fontisto";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import * as Clipboard from "expo-clipboard";
+import { useState } from "react";
+import {
+  Alert,
+  FlatList,
+  RefreshControl,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type ItemProps = {
   id: string;
@@ -30,6 +20,7 @@ type ItemProps = {
   vin: string;
   address: string;
   type: "PICKUP" | "DROP-OFF";
+  status: "PICKUP" | "DROP-OFF" | "TRANSIT" | "COMPLETED";
 };
 
 const Item = ({
@@ -38,20 +29,50 @@ const Item = ({
   type,
   address,
   index,
-}: ItemProps & { index: number }) => (
-  <View className="border border-gray-300 bg-white rounded-lg p-5 mb-2.5 shadow-md">
-    <View className="flex flex-row items-center mb-1">
-      <Text className="mr-2 font-medium text-gray-600">#{index + 1}</Text>
-      <Text className="uppercase font-semibold text-orange-500">
-        {companyName}
-      </Text>
-    </View>
-    <View className="flex flex-row items-center mb-3">
-      <Text className="font-Jakarta">Vin:</Text>
-      <Text className="font-JakartaSemiBold uppercase">{vin}</Text>
-    </View>
-    <View className="bg-gray-100 p-4 rounded-lg mb-4">
-      {/* <View className="mb-3">
+  status,
+}: ItemProps & { index: number }) => {
+  const copyToClipboard = async (vin: string) => {
+    await Clipboard.setStringAsync(vin);
+  };
+
+  return (
+    <>
+      <View className="border border-gray-300 bg-white rounded-lg p-5 mb-2.5 shadow-md">
+        <View className="flex flex-row items-center justify-between mb-1 w-full">
+          <View className="flex flex-row items-center justify-between">
+            <Text className="mr-2 font-medium text-gray-600">#{index + 1}</Text>
+            <Text className="uppercase font-semibold text-orange-500">
+              {companyName}
+            </Text>
+          </View>
+
+          {status && (
+            <Text
+              className={`${
+                status === "PICKUP" &&
+                "bg-orange-200/30 text-orange-700 border-orange-200/20"
+              } ${
+                status === "DROP-OFF" &&
+                "bg-purple-200/30 text-purple-700 border-purple-200/20"
+              } ${
+                status === "TRANSIT" &&
+                "bg-blue-200/30 text-blue-700 border-blue-200/20"
+              } 
+              ${
+                status === "COMPLETED" &&
+                "bg-green-200/30 text-green-700 border-green-200/20"
+              } rounded-full px-2.5 py-0.5 text-xs font-JakartaSemiBold capitalize text-center`}
+            >
+              {status}
+            </Text>
+          )}
+        </View>
+        <View className="flex flex-row items-center mb-3">
+          <Text className="font-Jakarta mr-1">Vin:</Text>
+          <Text className="font-JakartaSemiBold uppercase">{vin}</Text>
+        </View>
+        <View className="bg-gray-100 p-4 rounded-lg mb-4">
+          {/* <View className="mb-3">
         <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm">
           Pickup
         </Text>
@@ -60,52 +81,97 @@ const Item = ({
         </Text>
       </View> */}
 
-      <View>
-        <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm capitalize">
-          {type}
-        </Text>
-        <Text className="text-gray-700 font-JakartaSemiBold">{address}</Text>
+          <View>
+            <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm capitalize">
+              {type}
+            </Text>
+            <Text className="text-gray-700 font-JakartaSemiBold">
+              {address}
+            </Text>
+          </View>
+        </View>
+        <View className="flex flex-row justify-between mt-3">
+          <TouchableOpacity
+            className="border border-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3 text-center"
+            onPress={() => copyToClipboard(vin)}
+          >
+            <FontAwesome6 name="copy" size={16} color={"#FA7F35"} />
+            <Text className="text-center text-orange-500 ml-1.5 font-JakartaBold text-sm uppercase">
+              COPY VIN
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="bg-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3"
+            onPress={() => {}}
+          >
+            <MaterialIcons name="directions" size={24} color="white" />
+            <Text className="text-white text-center ml-1.5 font-JakartaBold uppercase text-sm">
+              Directions
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-    <View className="flex flex-row justify-between mt-3">
-      <TouchableOpacity
-        className="border border-orange-500 rounded-lg w-[48%]  py-3 text-center"
-        onPress={() => {}}
-      >
-        <Text className="text-center text-orange-500 font-JakartaBold">
-          Copy VIN
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        className="bg-orange-500 rounded-lg w-[48%] py-3 text-center"
-        onPress={() => {}}
-      >
-        <Text className="text-white text-center font-JakartaBold">
-          Navigate
-        </Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-);
+    </>
+  );
+};
 
 const Home = () => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+
+    try {
+      const fetchData = setTimeout(() => {
+        setRefreshing(false);
+      }, 3000);
+    } catch (error) {
+      Alert.alert("Something went wrong!");
+    } finally {
+      setRefreshing(false);
+    }
+  };
   return (
-    <View className="bg-white flex-1 p-4">
-      <FlatList
-        data={DATA}
-        renderItem={({ item, index }) => (
-          <Item
-            id={item.id}
-            index={index}
-            companyName={item.companyName}
-            vin={item.vin}
-            type={item.type}
-            address={item.address}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-      />
-    </View>
+    <SafeAreaView className="bg-white flex-1 p-4">
+      <View className="flex items-center justify-between w-full flex-row">
+        <View>
+          <View className="flex items-center flex-row">
+            <Text className="text-sm font-JakartaMedium text-gray-600 mr-0.5">
+              Welcome
+            </Text>
+            <MaterialIcons name="waving-hand" size={20} color="#f9d263" />
+          </View>
+          <Text className=" font-JakartaBold text-primary">Rajesh Allala</Text>
+        </View>
+        <TouchableOpacity onPress={() => {}}>
+          <Fontisto name="bell" size={20} color="black" />
+        </TouchableOpacity>
+      </View>
+      <View>
+        <Text className=" font-JakartaExtraBold text-lg mt-5">Routes</Text>
+        <FlatList
+          className="mt-2.5 mb-24"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+          data={routesData}
+          renderItem={({ item, index }) => (
+            <Item
+              id={item.id}
+              index={index}
+              companyName={item.companyName}
+              vin={item.vin}
+              type={item.type}
+              address={item.address}
+              status={item.status}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 
