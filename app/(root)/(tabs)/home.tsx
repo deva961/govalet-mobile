@@ -1,8 +1,9 @@
 import { routesData } from "@/constants/data";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Fontisto from "@expo/vector-icons/Fontisto";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -10,6 +11,7 @@ import {
   RefreshControl,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,19 +34,34 @@ const Item = ({
   status,
 }: ItemProps & { index: number }) => {
   const copyToClipboard = async (vin: string) => {
-    await Clipboard.setStringAsync(vin);
+    try {
+      console.log("Copying VIN:", vin);
+      await Clipboard.setStringAsync(vin);
+      Alert.alert("Copied to Clipboard", vin);
+    } catch (error) {
+      console.error("Clipboard error:", error);
+      Alert.alert("Clipboard Error", "Something went wrong.");
+    }
   };
+
+  const router = useRouter();
+
+  const handleCompanyNamePress = () => {};
 
   return (
     <>
-      <View className="border border-gray-300 bg-white rounded-lg p-5 mb-2.5 shadow-md">
+      <View className="border border-gray-300 bg-white rounded-lg p-5 mb-2.5">
         <View className="flex flex-row items-center justify-between mb-1 w-full">
-          <View className="flex flex-row items-center justify-between">
-            <Text className="mr-2 font-medium text-gray-600">#{index + 1}</Text>
-            <Text className="uppercase font-semibold text-orange-500">
-              {companyName}
-            </Text>
-          </View>
+          <TouchableWithoutFeedback onPress={handleCompanyNamePress}>
+            <View className="flex flex-row items-center justify-between">
+              <Text className="mr-2 font-medium text-gray-600">
+                #{index + 1}
+              </Text>
+              <Text className="uppercase font-semibold text-orange-500">
+                {companyName}
+              </Text>
+            </View>
+          </TouchableWithoutFeedback>
 
           {status && (
             <Text
@@ -68,19 +85,13 @@ const Item = ({
           )}
         </View>
         <View className="flex flex-row items-center mb-3">
-          <Text className="font-Jakarta mr-1">Vin:</Text>
-          <Text className="font-JakartaSemiBold uppercase">{vin}</Text>
+          <Text className="font-Jakarta mr-1">VIN:</Text>
+
+          <TouchableOpacity onLongPress={() => copyToClipboard(vin)}>
+            <Text className="font-JakartaSemiBold uppercase">{vin}</Text>
+          </TouchableOpacity>
         </View>
         <View className="bg-gray-100 p-4 rounded-lg mb-4">
-          {/* <View className="mb-3">
-        <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm">
-          Pickup
-        </Text>
-        <Text className="text-sm font-JakartaSemiBold text-gray-700">
-          196 Woodbine Ave, Kitchener, ON, N2R 1Y5
-        </Text>
-      </View> */}
-
           <View>
             <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm capitalize">
               {type}
@@ -91,13 +102,10 @@ const Item = ({
           </View>
         </View>
         <View className="flex flex-row justify-between mt-3">
-          <TouchableOpacity
-            className="border border-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3 text-center"
-            onPress={() => copyToClipboard(vin)}
-          >
-            <FontAwesome6 name="copy" size={16} color={"#FA7F35"} />
+          <TouchableOpacity className="border border-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3 text-center">
+            <Ionicons name="document-outline" size={20} color={"#FA7F35"} />
             <Text className="text-center text-orange-500 ml-1.5 font-JakartaBold text-sm uppercase">
-              COPY VIN
+              Release Form
             </Text>
           </TouchableOpacity>
 
@@ -132,8 +140,9 @@ const Home = () => {
       setRefreshing(false);
     }
   };
+
   return (
-    <SafeAreaView className="bg-white flex-1 p-4">
+    <SafeAreaView className="bg-white p-4">
       <View className="flex items-center justify-between w-full flex-row">
         <View>
           <View className="flex items-center flex-row">
@@ -142,35 +151,34 @@ const Home = () => {
             </Text>
             <MaterialIcons name="waving-hand" size={20} color="#f9d263" />
           </View>
-          <Text className=" font-JakartaBold text-primary">Rajesh Allala</Text>
+          <Text className="font-JakartaBold text-primary">Rajesh Allala</Text>
         </View>
         <TouchableOpacity onPress={() => {}}>
           <Fontisto name="bell" size={20} color="black" />
         </TouchableOpacity>
       </View>
-      <View>
-        <Text className=" font-JakartaExtraBold text-lg mt-5">Routes</Text>
-        <FlatList
-          className="mt-2.5 mb-24"
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
-          data={routesData}
-          renderItem={({ item, index }) => (
-            <Item
-              id={item.id}
-              index={index}
-              companyName={item.companyName}
-              vin={item.vin}
-              type={item.type}
-              address={item.address}
-              status={item.status}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-        />
-      </View>
+
+      <Text className="font-JakartaExtraBold text-lg mt-5">Routes</Text>
+      <FlatList
+        className="mt-2.5"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+        data={routesData}
+        renderItem={({ item, index }) => (
+          <Item
+            id={item.id}
+            index={index}
+            companyName={item.companyName}
+            vin={item.vin}
+            type={item.type}
+            address={item.address}
+            status={item.status}
+          />
+        )}
+        keyExtractor={(item) => item.id}
+      />
     </SafeAreaView>
   );
 };

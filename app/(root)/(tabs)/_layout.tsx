@@ -1,9 +1,6 @@
-import { Tabs } from "expo-router";
-import { Text, View } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
-import Octicons from "@expo/vector-icons/Octicons";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Fontisto from "@expo/vector-icons/Fontisto";
+import { Tabs } from "expo-router";
+import { Text } from "react-native";
 
 const activeColor = "#FA7F35";
 const inactiveColor = "#475569";
@@ -13,7 +10,6 @@ const TabLabel = ({ focused, label }: { focused: boolean; label: string }) => (
     style={{
       color: focused ? activeColor : inactiveColor,
       fontSize: 12,
-      fontFamily: "JakartaMedium",
     }}
   >
     {label}
