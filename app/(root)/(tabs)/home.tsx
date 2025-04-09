@@ -5,9 +5,12 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import * as Linking from "expo-linking";
+
 import {
   Alert,
   FlatList,
+  Platform,
   RefreshControl,
   Text,
   TouchableOpacity,
@@ -32,6 +35,7 @@ const Item = ({
   address,
   index,
   status,
+  id,
 }: ItemProps & { index: number }) => {
   const copyToClipboard = async (vin: string) => {
     try {
@@ -46,13 +50,35 @@ const Item = ({
 
   const router = useRouter();
 
-  const handleCompanyNamePress = () => {};
+  const handleCompanyNamePress = (id: string) => {
+    router.push(`/vehicles/${id}`);
+  };
+
+  const openDirections = async (destinationAddress: string) => {
+    const encodedAddress = encodeURIComponent(destinationAddress);
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+
+    try {
+      const supported = await Linking.canOpenURL(mapsUrl);
+      if (supported) {
+        await Linking.openURL(mapsUrl);
+      } else {
+        Alert.alert("Error", "Maps app not supported.");
+      }
+    } catch (error) {
+      console.error("Error opening maps:", error);
+      Alert.alert(
+        "Error",
+        "Something went wrong while trying to open the map."
+      );
+    }
+  };
 
   return (
     <>
       <View className="border border-gray-300 bg-white rounded-lg p-5 mb-2.5">
         <View className="flex flex-row items-center justify-between mb-1 w-full">
-          <TouchableWithoutFeedback onPress={handleCompanyNamePress}>
+          <TouchableWithoutFeedback onPress={() => handleCompanyNamePress(id)}>
             <View className="flex flex-row items-center justify-between">
               <Text className="mr-2 font-medium text-gray-600">
                 #{index + 1}
@@ -102,7 +128,13 @@ const Item = ({
           </View>
         </View>
         <View className="flex flex-row justify-between mt-3">
-          <TouchableOpacity className="border border-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3 text-center">
+          <TouchableOpacity
+            onPress={() => {
+              const url = `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`;
+              Linking.openURL(url);
+            }}
+            className="border border-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3 text-center"
+          >
             <Ionicons name="document-outline" size={20} color={"#FA7F35"} />
             <Text className="text-center text-orange-500 ml-1.5 font-JakartaBold text-sm uppercase">
               Release Form
@@ -111,7 +143,7 @@ const Item = ({
 
           <TouchableOpacity
             className="bg-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3"
-            onPress={() => {}}
+            onPress={() => openDirections("24 Jackson Ave, Kitchener")}
           >
             <MaterialIcons name="directions" size={24} color="white" />
             <Text className="text-white text-center ml-1.5 font-JakartaBold uppercase text-sm">
@@ -165,6 +197,10 @@ const Home = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          minHeight: "100%",
+          paddingBottom: Platform.OS === "ios" ? 40 : 80,
+        }}
         data={routesData}
         renderItem={({ item, index }) => (
           <Item
