@@ -1,6 +1,7 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 
 const Layout = () => {
+  const router = useRouter();
   return (
     <Stack>
       <Stack.Screen
@@ -12,17 +13,26 @@ const Layout = () => {
       <Stack.Screen
         name="vehicles/[id]"
         options={{
-          headerTitle: "Vehicle Detail",
+          headerTitle: `Vehicle`,
+          headerTitleAlign: "center",
           headerTintColor: "#FA7F35",
-          headerBackTitle: "Back",
         }}
       />
 
+      <Stack.Screen name="release-form" />
       <Stack.Screen
-        name="release-form"
-        // options={{
-        //   headerShown: false,
-        // }}
+        name="camera-screen"
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen name="submission" />
+      <Stack.Screen
+        name="signature"
+        options={{
+          headerShown: false,
+        }}
       />
     </Stack>
   );

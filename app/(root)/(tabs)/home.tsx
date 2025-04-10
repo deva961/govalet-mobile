@@ -39,11 +39,8 @@ const Item = ({
 }: ItemProps & { index: number }) => {
   const copyToClipboard = async (vin: string) => {
     try {
-      console.log("Copying VIN:", vin);
       await Clipboard.setStringAsync(vin);
-      Alert.alert("Copied to Clipboard", vin);
     } catch (error) {
-      console.error("Clipboard error:", error);
       Alert.alert("Clipboard Error", "Something went wrong.");
     }
   };
