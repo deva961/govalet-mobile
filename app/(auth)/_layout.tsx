@@ -1,5 +1,4 @@
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 
 const AuthLayout = () => {
   return (
@@ -7,9 +6,9 @@ const AuthLayout = () => {
       screenOptions={{
         headerShown: false,
       }}
-      initialRouteName="welcome"
+      initialRouteName="sign-in"
     >
-      <Stack.Screen name="welcome" />
+      {/* <Stack.Screen name="welcome" /> */}
       <Stack.Screen name="sign-in" />
     </Stack>
   );

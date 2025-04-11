@@ -14,7 +14,7 @@ const Welcome = () => {
     <SafeAreaView className="flex h-full items-center justify-between bg-white relative">
       <TouchableOpacity
         onPress={() => {
-          router.replace("/(auth)/sign-in");
+          router.replace("/");
         }}
         className="w-full flex justify-end items-end p-5"
       >
@@ -58,9 +58,7 @@ const Welcome = () => {
         <TouchableOpacity
           className="bg-primary shadow-md py-3.5 rounded-full mx-5"
           onPress={() => {
-            isLastSlide
-              ? router.replace("/(auth)/sign-in")
-              : swiperRef.current?.scrollBy(1);
+            isLastSlide ? router.replace("/") : swiperRef.current?.scrollBy(1);
           }}
         >
           <Text className="text-white text-center font-JakartaBold">

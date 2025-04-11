@@ -3,10 +3,11 @@ import Fontisto from "@expo/vector-icons/Fontisto";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import * as Linking from "expo-linking";
 
+import { useAuth } from "@/context/AuthContext";
 import {
   Alert,
   FlatList,
@@ -170,6 +171,8 @@ const Home = () => {
     }
   };
 
+  const { user } = useAuth();
+
   return (
     <SafeAreaView className="bg-white p-4">
       <View className="flex items-center justify-between w-full flex-row">
@@ -180,7 +183,7 @@ const Home = () => {
             </Text>
             <MaterialIcons name="waving-hand" size={20} color="#f9d263" />
           </View>
-          <Text className="font-JakartaBold text-primary">Rajesh Allala</Text>
+          <Text className="font-JakartaBold text-primary">{user?.name}</Text>
         </View>
         <TouchableOpacity onPress={() => {}}>
           <Fontisto name="bell" size={20} color="black" />
