@@ -1,13 +1,13 @@
-import { routesData } from "@/constants/data";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import { API_URL, useAuth } from "@/context/AuthContext";
+import axios from "axios";
 import {
   Alert,
   FlatList,
@@ -22,18 +22,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 type ItemProps = {
   id: string;
-  companyName: string;
+  vehicleName: string;
   vin: string;
-  address: string;
+  pickupAddress: string;
+  dropOffAddress: string;
   type: "PICKUP" | "DROP-OFF";
   status: "PICKUP" | "DROP-OFF" | "TRANSIT" | "COMPLETED";
 };
 
 const Item = ({
-  companyName,
+  vehicleName,
   vin,
   type,
-  address,
+  pickupAddress,
+  dropOffAddress,
   index,
   status,
   id,
@@ -73,20 +75,30 @@ const Item = ({
   };
 
   return (
-    <>
-      <View className="border border-gray-300 bg-white rounded-lg p-5 mb-2.5">
-        <View className="flex flex-row items-center justify-between mb-1 w-full">
-          <TouchableWithoutFeedback onPress={() => handleCompanyNamePress(id)}>
-            <View className="flex flex-row items-center justify-between">
-              <Text className="mr-2 font-medium text-gray-600">
-                #{index + 1}
-              </Text>
-              <Text className="uppercase font-semibold text-orange-500">
-                {companyName}
-              </Text>
-            </View>
-          </TouchableWithoutFeedback>
+    <View className="border border-gray-300 bg-white rounded-lg p-5 mb-2.5">
+      <View className="flex flex-row items-center justify-between mb-3 w-full">
+        <TouchableWithoutFeedback onPress={() => handleCompanyNamePress(id)}>
+          <View className="flex flex-row items-center justify-between">
+            <Text className="mr-2 font-medium text-gray-600">#{index + 1}</Text>
+            <Text
+              numberOfLines={2}
+              className="uppercase font-semibold text-orange-500 text-wrap"
+            >
+              {vehicleName}
+            </Text>
+          </View>
+        </TouchableWithoutFeedback>
+      </View>
+      <View className="flex flex-row items-center justify-between mb-3">
+        <View className="flex flex-row items-center ">
+          <Text className="font-Jakarta mr-1">VIN:</Text>
 
+          <TouchableOpacity onLongPress={() => copyToClipboard(vin)}>
+            <Text className="font-JakartaSemiBold uppercase">{vin}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View>
           {status && (
             <Text
               className={`${
@@ -99,76 +111,85 @@ const Item = ({
                 status === "TRANSIT" &&
                 "bg-blue-200/30 text-blue-700 border-blue-200/20"
               } 
-              ${
-                status === "COMPLETED" &&
-                "bg-green-200/30 text-green-700 border-green-200/20"
-              } rounded-full px-2.5 py-0.5 text-xs font-JakartaSemiBold capitalize text-center`}
+            ${
+              status === "COMPLETED" &&
+              "bg-green-200/30 text-green-700 border-green-200/20"
+            } rounded-full px-2.5 py-0.5 text-xs font-JakartaSemiBold capitalize text-center`}
             >
               {status}
             </Text>
           )}
         </View>
-        <View className="flex flex-row items-center mb-3">
-          <Text className="font-Jakarta mr-1">VIN:</Text>
-
-          <TouchableOpacity onLongPress={() => copyToClipboard(vin)}>
-            <Text className="font-JakartaSemiBold uppercase">{vin}</Text>
-          </TouchableOpacity>
+      </View>
+      <View className="bg-gray-100 p-4 rounded-lg mb-2">
+        <View className="mb-5">
+          <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm capitalize">
+            Pickup
+          </Text>
+          <Text className="text-gray-700 font-JakartaSemiBold">
+            {pickupAddress}
+          </Text>
         </View>
-        <View className="bg-gray-100 p-4 rounded-lg mb-4">
-          <View>
-            <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm capitalize">
-              {type}
-            </Text>
-            <Text className="text-gray-700 font-JakartaSemiBold">
-              {address}
-            </Text>
-          </View>
-        </View>
-        <View className="flex flex-row justify-between mt-3">
-          <TouchableOpacity
-            onPress={() => {
-              const url = `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`;
-              Linking.openURL(url);
-            }}
-            className="border border-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3 text-center"
-          >
-            <Ionicons name="document-outline" size={20} color={"#FA7F35"} />
-            <Text className="text-center text-orange-500 ml-1.5 font-JakartaBold text-sm uppercase">
-              Release Form
-            </Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            className="bg-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3"
-            onPress={() => openDirections("24 Jackson Ave, Kitchener")}
-          >
-            <MaterialIcons name="directions" size={24} color="white" />
-            <Text className="text-white text-center ml-1.5 font-JakartaBold uppercase text-sm">
-              Directions
-            </Text>
-          </TouchableOpacity>
+        <View>
+          <Text className="text-gray-600 mb-1 font-JakartaMedium text-sm capitalize">
+            Drop Off
+          </Text>
+          <Text className="text-gray-700 font-JakartaSemiBold">
+            {dropOffAddress}
+          </Text>
         </View>
       </View>
-    </>
+      <View className="flex flex-row justify-between mt-2">
+        <TouchableOpacity
+          onPress={() => {
+            const url = `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`;
+            Linking.openURL(url);
+          }}
+          className="border border-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3 text-center"
+        >
+          <Ionicons name="document-outline" size={20} color={"#FA7F35"} />
+          <Text className="text-center text-orange-500 ml-1.5 font-JakartaBold text-sm uppercase">
+            Release Form
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="bg-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3"
+          onPress={() => openDirections("24 Jackson Ave, Kitchener")}
+        >
+          <MaterialIcons name="directions" size={24} color="white" />
+          <Text className="text-white text-center ml-1.5 font-JakartaBold uppercase text-sm">
+            Directions
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const Home = () => {
   const [refreshing, setRefreshing] = useState(false);
+  const [vehiclesData, setVehiclesData] = useState<any[]>([]); // State to store fetched data
 
-  const onRefresh = () => {
-    setRefreshing(true);
-
+  const fetchData = async () => {
     try {
-      const fetchData = setTimeout(() => {
-        setRefreshing(false);
-      }, 3000);
+      const res = await axios.get(`${API_URL}/vehicles`);
+      setVehiclesData(res.data.data);
     } catch (error) {
+      console.log(error);
       Alert.alert("Something went wrong!");
     } finally {
       setRefreshing(false);
     }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const onRefresh = async () => {
+    fetchData();
   };
 
   const { user } = useAuth();
@@ -201,16 +222,17 @@ const Home = () => {
           minHeight: "100%",
           paddingBottom: Platform.OS === "ios" ? 40 : 80,
         }}
-        data={routesData}
+        data={vehiclesData}
         renderItem={({ item, index }) => (
           <Item
             id={item.id}
             index={index}
-            companyName={item.companyName}
+            vehicleName={`${item.year} ${item.make} ${item.model}`}
             vin={item.vin}
-            type={item.type}
-            address={item.address}
-            status={item.status}
+            type={item.serviceType}
+            pickupAddress={item.pickupCompany?.address}
+            dropOffAddress={item.dropoffCompany?.address}
+            status={item.serviceType}
           />
         )}
         keyExtractor={(item) => item.id}

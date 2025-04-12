@@ -24,9 +24,10 @@ const AppLayout = () => {
       <Stack.Screen
         name="vehicles/[id]"
         options={{
-          headerTitle: `Vehicle`,
-          headerTitleAlign: "center",
-          headerTintColor: "#FA7F35",
+          headerShown: false,
+          // headerTitle: `Vehicle`,
+          // headerTitleAlign: "center",
+          // headerTintColor: "#FA7F35",
         }}
       />
       <Stack.Screen name="release-form" />

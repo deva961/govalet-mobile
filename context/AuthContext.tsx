@@ -5,7 +5,7 @@ import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 import * as LocalAuthentication from "expo-local-authentication";
 
-export const API_URL = "http://10.0.0.226:3000/api";
+export const API_URL = "https://govalet-backend.vercel.app/api";
 const TOKEN_KEY = "TOKEN_KEY";
 
 type User = {
@@ -43,10 +43,6 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
       });
 
-      console.log("logindata:", data);
-
-      console.log("token:", data.token);
-
       await SecureStore.setItemAsync(TOKEN_KEY, data.token);
       axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
 
@@ -63,12 +59,16 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    const { data } = await axios.post(`${API_URL}/auth/sign-out`);
-    console.log("signout:", data);
-    setUser(null);
-    setSession(false);
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    delete axios.defaults.headers.common["Authorization"];
+    try {
+      await axios.post(`${API_URL}/auth/sign-out`);
+
+      setUser(null);
+      setSession(false);
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      delete axios.defaults.headers.common["Authorization"];
+    } catch (error) {
+      console.log("Sign out error:", error);
+    }
   };
 
   // Automatically try to restore session on app load
@@ -78,29 +78,37 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
 
-        if (token) {
-          const hasHardware = await LocalAuthentication.hasHardwareAsync();
-          const supportedTypes =
-            await LocalAuthentication.supportedAuthenticationTypesAsync();
-          const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+        if (!token) {
+          setLoading(false);
+          return; // Early return if no token is found
+        }
 
-          if (hasHardware && isEnrolled) {
-            const result = await LocalAuthentication.authenticateAsync({
-              promptMessage: "Authenticate to continue",
-              fallbackLabel: "Use Passcode",
-            });
+        // Biometric authentication
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const supportedTypes =
+          await LocalAuthentication.supportedAuthenticationTypesAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
-            if (!result.success) {
-              console.log("Biometric auth failed or cancelled.");
-              setLoading(false);
-              return;
-            }
+        if (hasHardware && isEnrolled) {
+          const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: "Authenticate to continue",
+            fallbackLabel: "Use Passcode",
+          });
+
+          if (!result.success) {
+            console.log("Biometric authentication failed or canceled.");
+            setLoading(false);
+            return; // Skip session restoration if biometric authentication fails
           }
+        }
 
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-          const { data } = await axios.get(`${API_URL}/auth/get-session`);
+        // Restore session with token
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        const { data } = await axios.get(`${API_URL}/auth/get-session`);
 
-          console.log("user fetch session:", data.session);
+        if (data.session === undefined) {
+          await signOut(); // If session is undefined, sign out
+        } else {
           setUser(data.user);
           setSession(true);
         }
