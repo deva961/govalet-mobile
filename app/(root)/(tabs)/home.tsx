@@ -5,11 +5,13 @@ import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { API_URL, useAuth } from "@/context/AuthContext";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import axios from "axios";
 import {
   Alert,
+  Dimensions,
   FlatList,
   Platform,
   RefreshControl,
@@ -156,7 +158,14 @@ const Item = ({
 
         <TouchableOpacity
           className="bg-orange-500 rounded-lg w-[48%] flex items-center justify-center flex-row py-3"
-          onPress={() => openDirections("24 Jackson Ave, Kitchener")}
+          onPress={() => {
+            if (type === "PICKUP") {
+              openDirections(pickupAddress);
+            }
+            if (type === "DROP-OFF") {
+              openDirections(dropOffAddress);
+            }
+          }}
         >
           <MaterialIcons name="directions" size={24} color="white" />
           <Text className="text-white text-center ml-1.5 font-JakartaBold uppercase text-sm">
@@ -194,8 +203,10 @@ const Home = () => {
 
   const { user } = useAuth();
 
+  const { width } = Dimensions.get("window");
+
   return (
-    <SafeAreaView className="bg-white p-4">
+    <SafeAreaView className="bg-white p-4 flex-1">
       <View className="flex items-center justify-between w-full flex-row">
         <View>
           <View className="flex items-center flex-row">
@@ -212,31 +223,46 @@ const Home = () => {
       </View>
 
       <Text className="font-JakartaExtraBold text-lg mt-5">Routes</Text>
-      <FlatList
-        className="mt-2.5"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          minHeight: "100%",
-          paddingBottom: Platform.OS === "ios" ? 40 : 80,
-        }}
-        data={vehiclesData}
-        renderItem={({ item, index }) => (
-          <Item
-            id={item.id}
-            index={index}
-            vehicleName={`${item.year} ${item.make} ${item.model}`}
-            vin={item.vin}
-            type={item.serviceType}
-            pickupAddress={item.pickupCompany?.address}
-            dropOffAddress={item.dropoffCompany?.address}
-            status={item.serviceType}
+      {vehiclesData && vehiclesData.length !== 0 ? (
+        <FlatList
+          className="mt-2.5"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            minHeight: "100%",
+            paddingBottom: Platform.OS === "ios" ? 40 : 80,
+          }}
+          data={vehiclesData}
+          renderItem={({ item, index }) => (
+            <Item
+              id={item.id}
+              index={index}
+              vehicleName={`${item.year} ${item.make} ${item.model}`}
+              vin={item.vin}
+              type={item.serviceType}
+              pickupAddress={item.pickupCompany?.address}
+              dropOffAddress={item.dropoffCompany?.address}
+              status={item.serviceType}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+        />
+      ) : (
+        <View className="flex-1 items-center justify-center -mt-20 gap-2">
+          <MaterialCommunityIcons
+            name="routes"
+            size={width / 5}
+            color="#FA7F35"
           />
-        )}
-        keyExtractor={(item) => item.id}
-      />
+          {/* <FontAwesome6 name="route" size={width / 5} color="#FA7F35" /> */}
+          <Text className="font-JakartaMedium text-center ">No Data</Text>
+          <Text className="font-Jakarta text-center text-sm text-gray-600/80">
+            Swipe down to refresh route list
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };

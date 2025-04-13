@@ -2,6 +2,7 @@ import Popup from "@/components/popup";
 import { API_URL } from "@/context/AuthContext";
 import { formatCanadianPhone } from "@/utils/phone-formatter";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import axios from "axios";
@@ -20,9 +21,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const VehicleDetail = ({ type = "DROPOFF" }: { type: string }) => {
+const VehicleDetail = ({ type }: { type: string }) => {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [loading, setLoading] = useState(true); // for first-time load
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [showSignature, setShowSignature] = useState<boolean>(false);
 
@@ -142,9 +143,18 @@ const VehicleDetail = ({ type = "DROPOFF" }: { type: string }) => {
             </Text>
 
             <Text className="mb-2 font-JakartaBold">Pickup Address:</Text>
-            <Text className="text-base text-black/70 font-Jakarta">
+            <Text className="text-base text-black/70 font-Jakarta  mb-5">
               {vehicleData?.pickupCompany?.address}
             </Text>
+
+            {/* signature */}
+            <Text className="mb-2 font-JakartaBold">Signature:</Text>
+            <Pressable
+              onPress={() => setModalOpen(true)}
+              className="w-16 h-16 items-center justify-center bg-gray-100 rounded-lg"
+            >
+              <FontAwesome6 name="pen-to-square" size={20} color="black" />
+            </Pressable>
           </View>
 
           {/* DropOff Address */}
@@ -173,7 +183,7 @@ const VehicleDetail = ({ type = "DROPOFF" }: { type: string }) => {
           {/* Attachments */}
           <View className="p-5 bg-white rounded-lg mb-3">
             <Text className="font-JakartaBold mb-3">Attachments:</Text>
-            <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center justify-between mb-3">
               <Text className="text-black/70">Release Form:</Text>
               <TouchableOpacity
                 onPress={() =>
@@ -194,7 +204,10 @@ const VehicleDetail = ({ type = "DROPOFF" }: { type: string }) => {
           <View className="mb-3 p-5 bg-white rounded-lg">
             <Text className="mb-2.5 font-JakartaBold">Pictures:</Text>
 
-            <Pressable onPress={() => router.push("/camera-screen")}>
+            <Pressable
+              onPress={() => router.push("/camera-screen")}
+              className="w-20 h-20 items-center justify-center bg-gray-100 rounded-lg"
+            >
               <Ionicons name="camera-outline" size={40} color="black" />
             </Pressable>
           </View>
@@ -202,7 +215,13 @@ const VehicleDetail = ({ type = "DROPOFF" }: { type: string }) => {
           {/* Action Buttons */}
           <View className="flex-row justify-between">
             <TouchableOpacity
-              onPress={() => Linking.openURL(`tel:${phone}`)}
+              onPress={() => {
+                if (vehicleData.serviceType === "PICKUP") {
+                  Linking.openURL(`tel:${vehicleData.pickupCompany.phone}`);
+                } else if (vehicleData.serviceType === "DROPOFF") {
+                  Linking.openURL(`tel:${vehicleData.dropoffCompany.phone}`);
+                }
+              }}
               className="border bg-white border-orange-500 rounded-lg w-[48%] flex-row items-center justify-center py-3"
             >
               <MaterialIcons name="phone" size={20} color={"#FA7F35"} />
@@ -212,12 +231,12 @@ const VehicleDetail = ({ type = "DROPOFF" }: { type: string }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="bg-orange-500 rounded-lg w-[48%] flex-row items-center justify-center py-3"
-              onPress={() => router.push("/signature")}
+              className={`bg-orange-500 rounded-lg w-[48%] flex-row items-center justify-center py-3`}
+              onPress={() => {}}
             >
               <FontAwesome name="hourglass-start" size={16} color="white" />
               <Text className="text-white ml-2 font-JakartaBold text-sm uppercase">
-                {type === "PICKUP" ? "Pick Up" : "Drop Off"}
+                {vehicleData.serviceType === "PICKUP" ? "Pick Up" : "Drop Off"}
               </Text>
             </TouchableOpacity>
           </View>

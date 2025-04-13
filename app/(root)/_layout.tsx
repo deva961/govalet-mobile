@@ -33,7 +33,6 @@ const AppLayout = () => {
       <Stack.Screen name="release-form" />
       <Stack.Screen name="camera-screen" options={{ headerShown: false }} />
       <Stack.Screen name="submission" />
-      <Stack.Screen name="signature" options={{ headerShown: false }} />
     </Stack>
   );
 };

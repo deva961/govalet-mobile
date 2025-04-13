@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Alert, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -30,13 +30,15 @@ const defaultAuthContext: AuthContextType = {
 
 const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
+// Prevent auto-hiding the splash screen
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [loading, setLoading] = useState<boolean>(true); // initial loading state
+  const [appReady, setAppReady] = useState(false);
   const [session, setSession] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
     try {
       const { data } = await axios.post(`${API_URL}/auth/sign-in/email`, {
         email,
@@ -53,40 +55,49 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         error?.response?.data?.message || "Failed to sign in. Try again later.";
       Alert.alert("Authentication Error", message);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
+  // const signOut = async () => {
+  //   try {
+  //     await axios.post(`${API_URL}/auth/sign-out`);
+  //     setUser(null);
+  //     setSession(false);
+  //     await SecureStore.deleteItemAsync(TOKEN_KEY);
+  //     delete axios.defaults.headers.common["Authorization"];
+  //   } catch (error) {
+  //     console.log("Sign out error:", error);
+  //   }
+  // };
+
   const signOut = async () => {
     try {
-      await axios.post(`${API_URL}/auth/sign-out`);
-
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (token) {
+        await axios.post(`${API_URL}/auth/sign-out`);
+      }
+    } catch (error) {
+      console.log("Sign out API call skipped or failed:", error);
+    } finally {
       setUser(null);
       setSession(false);
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       delete axios.defaults.headers.common["Authorization"];
-    } catch (error) {
-      console.log("Sign out error:", error);
     }
   };
 
-  // Automatically try to restore session on app load
+  // Restore session on app start
   useEffect(() => {
-    const fetchSession = async () => {
-      setLoading(true);
+    const restoreSession = async () => {
       try {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
 
         if (!token) {
-          setLoading(false);
-          return; // Early return if no token is found
+          await signOut();
+          return; // <--- Important: stop execution here
         }
 
-        // Biometric authentication
         const hasHardware = await LocalAuthentication.hasHardwareAsync();
-        const supportedTypes =
-          await LocalAuthentication.supportedAuthenticationTypesAsync();
         const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
         if (hasHardware && isEnrolled) {
@@ -95,32 +106,28 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             fallbackLabel: "Use Passcode",
           });
 
-          if (!result.success) {
-            console.log("Biometric authentication failed or canceled.");
-            setLoading(false);
-            return; // Skip session restoration if biometric authentication fails
-          }
+          if (!result.success) return;
         }
 
-        // Restore session with token
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         const { data } = await axios.get(`${API_URL}/auth/get-session`);
 
-        if (data.session === undefined) {
-          await signOut(); // If session is undefined, sign out
-        } else {
+        if (data?.user) {
           setUser(data.user);
           setSession(true);
+        } else {
+          await signOut();
         }
-      } catch (error) {
-        console.log("Session restore failed:", error);
+      } catch (error: any) {
+        console.log("Restore failed:", error?.response?.data || error.message);
         await signOut();
       } finally {
-        setLoading(false);
+        setAppReady(true);
+        SplashScreen.hideAsync();
       }
     };
 
-    fetchSession();
+    restoreSession();
   }, []);
 
   const contextData: AuthContextType = {
@@ -130,16 +137,10 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     session,
   };
 
+  if (!appReady) return null; // Don't render anything until app is ready
+
   return (
-    <AuthContext.Provider value={contextData}>
-      {loading ? (
-        <SafeAreaView className="flex-1 items-center justify-center">
-          <Text>Loading...</Text>
-        </SafeAreaView>
-      ) : (
-        children
-      )}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextData}>{children}</AuthContext.Provider>
   );
 };
 
