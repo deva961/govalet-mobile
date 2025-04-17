@@ -8,8 +8,9 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import axios from "axios";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
+  ActivityIndicator,
   Linking,
   Platform,
   Pressable,
@@ -21,133 +22,94 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const InfoRow = ({ label, value }: { label: string; value: string }) => (
+  <View className="flex flex-row items-center justify-between mb-5">
+    <Text className="font-JakartaBold">{label}:</Text>
+    <Text className="text-black/70 font-Jakarta">{value || "—"}</Text>
+  </View>
+);
+
+const AttachmentRow = ({ label, url }: { label: string; url: string }) => (
+  <View className="flex-row items-center justify-between mb-3">
+    <Text className="text-black/70">{label}</Text>
+    <TouchableOpacity
+      onPress={() => Linking.openURL(url)}
+      className="border-b border-orange-500"
+    >
+      <Text className="text-orange-500 font-JakartaBold uppercase text-sm">
+        Download
+      </Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const SectionCard = ({ children }: { children: React.ReactNode }) => (
+  <View className="p-5 bg-white rounded-lg mb-3">{children}</View>
+);
+
+const SkeletonCard = () => (
+  <View className="p-5 bg-white rounded-lg mb-3">
+    <View className="h-5 bg-gray-200 rounded mb-4" />
+    <View className="h-5 bg-gray-200 rounded mb-4" />
+    <View className="h-5 bg-gray-200 rounded mb-4" />
+  </View>
+);
+
 const VehicleDetail = ({ type }: { type: string }) => {
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [vehicleData, setVehicleData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [showSignature, setShowSignature] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
-  const [vehicleData, setVehicleData] = useState<any | null>(null);
-
-  const fetchData = async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      const res = await axios.get(`${API_URL}/vehicles/${id}`);
-      setVehicleData(res.data.data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      if (isRefresh) {
-        setRefreshing(false);
-      } else {
-        setLoading(false);
+  const fetchData = useCallback(
+    async (isRefresh = false) => {
+      isRefresh ? setRefreshing(true) : setLoading(true);
+      try {
+        const res = await axios.get(`${API_URL}/vehicles/${id}`);
+        setVehicleData(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch vehicle data:", err);
+      } finally {
+        isRefresh ? setRefreshing(false) : setLoading(false);
       }
-    }
-  };
-
-  useEffect(() => {
-    if (id) {
-      fetchData();
-    }
-  }, [id]);
-
-  const onRefresh = () => {
-    fetchData(true); // pass true to trigger spinner
-  };
-
-  const phone = "2263456432";
-
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 justify-center items-center bg-white">
-        <Text className="text-lg font-JakartaBold">Loading...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  const Header = () => (
-    <SafeAreaView className="bg-primary">
-      <View
-        className={`${
-          Platform.OS === "android" && "pb-5"
-        } flex-row items-center justify-between px-4 `}
-      >
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text className="text-white font-JakartaBold text-lg">
-          {`${vehicleData?.year} ${vehicleData?.make} ${vehicleData?.model}`}
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
-    </SafeAreaView>
+    },
+    [id]
   );
 
-  return (
-    <>
-      {/* Header */}
-      <Header />
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: 40,
-        }}
-      >
-        <View className="m-3">
-          {/* Vehicle Info */}
-          <View className="mb-3 p-5 bg-white rounded-lg">
-            {[
-              ["VIN", vehicleData?.vin ?? "—"],
-              ["Make", vehicleData?.make ?? "—"],
-              ["Model", vehicleData?.model ?? "—"],
-              ["Year", vehicleData?.year ?? "—"],
-            ].map(([label, value]) => (
-              <View
-                key={label}
-                className="flex flex-row items-center justify-between mb-5"
-              >
-                <Text className="font-JakartaBold">{label}:</Text>
-                <Text className="text-black/70 font-Jakarta">{value}</Text>
-              </View>
-            ))}
-          </View>
+  useEffect(() => {
+    if (id) fetchData();
+  }, [id]);
 
-          {/* Pickup Address */}
-          <View className="mb-3 p-5 bg-white rounded-lg">
-            <Text className="font-JakartaBold text-primary text-center text-lg">
-              Pick Up
-            </Text>
-            <Text className="mb-2 font-JakartaBold">Name:</Text>
-            <Text className="text-base text-black/70 font-Jakarta mb-5">
-              {vehicleData?.pickupCompany?.name}
-            </Text>
+  const onRefresh = () => fetchData(true);
 
-            <Text className="mb-2 font-JakartaBold">Phone:</Text>
-            <Text className="text-base text-black/70 font-Jakarta mb-5">
-              {vehicleData &&
-                vehicleData.pickupCompany.phone &&
-                formatCanadianPhone(vehicleData.pickupCompany.phone)}
-            </Text>
+  const isPickup = vehicleData?.serviceType === "PICKUP";
+  const contactCompany = isPickup
+    ? vehicleData?.pickupCompany
+    : vehicleData?.dropoffCompany;
 
-            <Text className="mb-2 font-JakartaBold">Pickup Address:</Text>
-            <Text className="text-base text-black/70 font-Jakarta  mb-5">
-              {vehicleData?.pickupCompany?.address}
-            </Text>
-
-            {/* signature */}
+  const renderContactSection = useMemo(
+    () => (
+      <SectionCard>
+        <Text className="font-JakartaBold text-primary text-center text-lg">
+          {isPickup ? "Pick Up" : "Drop Off"}
+        </Text>
+        <Text className="mb-2 mt-4 font-JakartaBold">Name:</Text>
+        <Text className="text-base text-black/70 font-Jakarta mb-5">
+          {contactCompany?.name || "—"}
+        </Text>
+        <Text className="mb-2 font-JakartaBold">Phone:</Text>
+        <Text className="text-base text-black/70 font-Jakarta mb-5">
+          {contactCompany?.phone && formatCanadianPhone(contactCompany.phone)}
+        </Text>
+        <Text className="mb-2 font-JakartaBold">Address:</Text>
+        <Text className="text-base text-black/70 font-Jakarta mb-5">
+          {contactCompany?.address || "—"}
+        </Text>
+        {isPickup && (
+          <>
             <Text className="mb-2 font-JakartaBold">Signature:</Text>
             <Pressable
               onPress={() => setModalOpen(true)}
@@ -155,96 +117,106 @@ const VehicleDetail = ({ type }: { type: string }) => {
             >
               <FontAwesome6 name="pen-to-square" size={20} color="black" />
             </Pressable>
-          </View>
+          </>
+        )}
+      </SectionCard>
+    ),
+    [contactCompany, isPickup]
+  );
 
-          {/* DropOff Address */}
-          <View className="mb-3 p-5 bg-white rounded-lg">
-            <Text className="font-JakartaBold text-center text-lg text-primary">
-              Drop Off
-            </Text>
-            <Text className="mb-2 font-JakartaBold">Name:</Text>
-            <Text className="text-base text-black/70 font-Jakarta mb-5">
-              {vehicleData?.dropoffCompany?.name}
-            </Text>
+  return (
+    <>
+      <SafeAreaView className="bg-primary">
+        <View
+          className={`flex-row items-center justify-between px-4 ${
+            Platform.OS === "android" ? "pb-5" : ""
+          }`}
+        >
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text className="text-white font-JakartaBold text-lg text-center flex-1 ml-4">
+            {vehicleData?.year} {vehicleData?.make} {vehicleData?.model}
+          </Text>
+          <View style={{ width: 24 }} />
+        </View>
+      </SafeAreaView>
 
-            <Text className="mb-2 font-JakartaBold">Phone:</Text>
-            <Text className="text-base text-black/70 font-Jakarta mb-5">
-              {vehicleData &&
-                vehicleData.dropoffCompany.phone &&
-                formatCanadianPhone(vehicleData.dropoffCompany.phone)}
-            </Text>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+      >
+        <View className="m-3">
+          {loading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            <>
+              <SectionCard>
+                <InfoRow label="VIN" value={vehicleData?.vin} />
+                <InfoRow label="Make" value={vehicleData?.make} />
+                <InfoRow label="Model" value={vehicleData?.model} />
+                <InfoRow label="Year" value={vehicleData?.year} />
+              </SectionCard>
 
-            <Text className="mb-2 font-JakartaBold">Address:</Text>
-            <Text className="text-base text-black/70 font-Jakarta">
-              {vehicleData?.dropoffCompany?.address}
-            </Text>
-          </View>
+              {renderContactSection}
 
-          {/* Attachments */}
-          <View className="p-5 bg-white rounded-lg mb-3">
-            <Text className="font-JakartaBold mb-3">Attachments:</Text>
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-black/70">Release Form:</Text>
-              <TouchableOpacity
-                onPress={() =>
-                  Linking.openURL(
-                    `https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf`
-                  )
-                }
-                className="border-b border-orange-500"
-              >
-                <Text className="text-orange-500 font-JakartaBold uppercase text-sm">
-                  Download
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+              <SectionCard>
+                <Text className="font-JakartaBold mb-3">Attachments:</Text>
+                <AttachmentRow
+                  label="Release Form"
+                  url="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                />
+              </SectionCard>
 
-          {/* Pictures */}
-          <View className="mb-3 p-5 bg-white rounded-lg">
-            <Text className="mb-2.5 font-JakartaBold">Pictures:</Text>
+              <SectionCard>
+                <Text className="mb-2.5 font-JakartaBold">Pictures:</Text>
+                <Pressable
+                  onPress={() => router.push("/camera-screen")}
+                  className="w-20 h-20 items-center justify-center bg-gray-100 rounded-lg"
+                >
+                  <Ionicons name="camera-outline" size={40} color="black" />
+                </Pressable>
+              </SectionCard>
 
-            <Pressable
-              onPress={() => router.push("/camera-screen")}
-              className="w-20 h-20 items-center justify-center bg-gray-100 rounded-lg"
-            >
-              <Ionicons name="camera-outline" size={40} color="black" />
-            </Pressable>
-          </View>
+              <View className="flex-row justify-between mt-4">
+                <TouchableOpacity
+                  onPress={() =>
+                    contactCompany?.phone &&
+                    Linking.openURL(`tel:${contactCompany.phone}`)
+                  }
+                  className="border bg-white border-orange-500 rounded-lg w-[48%] flex-row items-center justify-center py-3"
+                >
+                  <MaterialIcons name="phone" size={20} color={"#FA7F35"} />
+                  <Text className="text-orange-500 ml-2 font-JakartaBold text-sm uppercase">
+                    Call Customer
+                  </Text>
+                </TouchableOpacity>
 
-          {/* Action Buttons */}
-          <View className="flex-row justify-between">
-            <TouchableOpacity
-              onPress={() => {
-                if (vehicleData.serviceType === "PICKUP") {
-                  Linking.openURL(`tel:${vehicleData.pickupCompany.phone}`);
-                } else if (vehicleData.serviceType === "DROPOFF") {
-                  Linking.openURL(`tel:${vehicleData.dropoffCompany.phone}`);
-                }
-              }}
-              className="border bg-white border-orange-500 rounded-lg w-[48%] flex-row items-center justify-center py-3"
-            >
-              <MaterialIcons name="phone" size={20} color={"#FA7F35"} />
-              <Text className="text-orange-500 ml-2 font-JakartaBold text-sm uppercase">
-                Call Customer
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {}}
+                  className="bg-orange-500 rounded-lg w-[48%] flex-row items-center justify-center py-3"
+                >
+                  <FontAwesome name="hourglass-start" size={16} color="white" />
+                  <Text className="text-white ml-2 font-JakartaBold text-sm uppercase">
+                    {isPickup ? "Pick Up" : "Drop Off"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-            <TouchableOpacity
-              className={`bg-orange-500 rounded-lg w-[48%] flex-row items-center justify-center py-3`}
-              onPress={() => {}}
-            >
-              <FontAwesome name="hourglass-start" size={16} color="white" />
-              <Text className="text-white ml-2 font-JakartaBold text-sm uppercase">
-                {vehicleData.serviceType === "PICKUP" ? "Pick Up" : "Drop Off"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Modal */}
-          <Popup modalOpen={modalOpen} setModalOpen={setModalOpen} />
+              <Popup modalOpen={modalOpen} setModalOpen={setModalOpen} />
+            </>
+          )}
         </View>
       </ScrollView>
+
       <StatusBar style="light" />
     </>
   );
